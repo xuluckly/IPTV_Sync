@@ -1,0 +1,41 @@
+name: Sync IPTV Live File
+on:
+  # 定时执行：每天 UTC 0:05、2:05、4:05 执行（逢双小时+5分钟）
+  schedule:
+    - cron: '5 0,2,4,6,8,10,12,14,16,18,20,22 * * *'
+  # 手动触发（方便测试）
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出当前仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 下载远程 live.txt 文件
+      - name: Download live.txt
+        run: |
+          # 创建 live.txt 目录（确保路径存在）
+          mkdir -p live.txt
+          # 下载文件并保存到指定路径
+          curl -o live.txt/iptv4.txt https://ghfast.top/raw.githubusercontent.com/Supprise0901/TVBox_live/main/live.txt \
+            || curl -o live.txt/iptv4.txt https://raw.githubusercontent.com/Supprise0901/TVBox_live/main/live.txt
+
+      # 3. 配置 Git 提交信息
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      # 4. 提交并推送修改（仅文件有变更时）
+      - name: Commit and push changes
+        run: |
+          git add live.txt/iptv4.txt
+          if git diff --staged --quiet; then
+            echo "No changes to commit - skip push"
+          else
+            git commit -m "Sync live.txt to iptv4.txt $(date +'%Y-%m-%d %H:%M:%S')"
+            git push origin main
+          fi
